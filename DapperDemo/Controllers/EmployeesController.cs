@@ -9,19 +9,27 @@ namespace DapperDemo.Controllers
     {
         private readonly ICompanyRepository _compRepo;
         private readonly IEmployeeRepository _empRepo;
-
+        private readonly IBonusRepository _bonRepo;
         [BindProperty]
         public Employee Employee { get; set; }
 
-        public EmployeesController(IEmployeeRepository empRepo, ICompanyRepository compRepo)
+        public EmployeesController(IEmployeeRepository empRepo, ICompanyRepository compRepo, IBonusRepository bonRepo)
         {
             _compRepo = compRepo;
             _empRepo = empRepo;
+            _bonRepo = bonRepo;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int companyId = 0)
         {
-            return View(_empRepo.GetAll());
+            //List<Employee> employees = _empRepo.GetAll();
+            //foreach(Employee obj in employees)
+            //{
+            //    obj.Company = _compRepo.Find(obj.CompanyId);
+            //}
+
+            List<Employee> employees = _bonRepo.GetEmployeeWithCompany(companyId);
+            return View(employees);
         }
         public IActionResult Create()
         {
@@ -32,6 +40,7 @@ namespace DapperDemo.Controllers
                 Value = i.CompanyId.ToString()
             });
             ViewBag.CompanyList = companyList;
+
             return View();
         }
 
@@ -40,7 +49,6 @@ namespace DapperDemo.Controllers
         [ActionName("Create")]
         public async Task<IActionResult> CreatePOST()
         {
-            await Console.Out.WriteLineAsync("In Employee post");
             if (ModelState.IsValid)
             {
                 _empRepo.Add(Employee);
@@ -55,7 +63,6 @@ namespace DapperDemo.Controllers
             }
             return View(Employee);
         }
-
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -64,6 +71,13 @@ namespace DapperDemo.Controllers
             }
 
             Employee = _empRepo.Find(id.GetValueOrDefault());
+
+            IEnumerable<SelectListItem> companyList = _compRepo.GetAll().Select(i => new SelectListItem
+            {
+                Text = i.Name,
+                Value = i.CompanyId.ToString()
+            });
+            ViewBag.CompanyList = companyList;
             if (Employee == null)
             {
                 return NotFound();
@@ -75,23 +89,24 @@ namespace DapperDemo.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id)
         {
-            IEnumerable<SelectListItem> companyList = _compRepo.GetAll().Select(i => new SelectListItem
-            {
-                Text = i.Name,
-                Value = i.CompanyId.ToString()
-            });
-            ViewBag.CompanyList = companyList;
             if (id != Employee.EmployeeId)
             {
                 return NotFound();
             }
-            
+            await Console.Out.WriteLineAsync("Hello");
             if (ModelState.IsValid)
             {
                 _empRepo.Update(Employee);
+                await Console.Out.WriteLineAsync("Heasfasfafasllo");
                 return RedirectToAction(nameof(Index));
             }
-            
+            foreach (var modelState in ModelState.Values)
+            {
+                foreach (var error in modelState.Errors)
+                {
+                    await Console.Out.WriteLineAsync(error.ErrorMessage);
+                }
+            }
             return View(Employee);
         }
 
@@ -102,7 +117,7 @@ namespace DapperDemo.Controllers
                 return NotFound();
             }
 
-            _compRepo.Remove(id.GetValueOrDefault());
+            _empRepo.Remove(id.GetValueOrDefault());
             return RedirectToAction(nameof(Index));
         }
     }

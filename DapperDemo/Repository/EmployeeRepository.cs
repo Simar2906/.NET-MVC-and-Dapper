@@ -19,7 +19,7 @@ namespace DapperDemo.Repository
         }
         public Employee Add(Employee employee)
         {
-            var sql = "INSERT INTO Employee(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
+            var sql = "INSERT INTO Employees(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
                         + "SELECT CAST(SCOPE_IDENTITY() as int); ";
             var id = db.Query<int>(sql, employee).Single();
             employee.EmployeeId = id;
@@ -28,25 +28,25 @@ namespace DapperDemo.Repository
 
         public Employee Find(int id)
         {
-            var sql = $"SELECT * FROM Employee WHERE EmployeeId= @EmployeeId";
+            var sql = $"SELECT * FROM Employees WHERE EmployeeId= @EmployeeId";
             return db.Query<Employee>(sql, new {@EmployeeId = id}).Single();
         }
 
         public List<Employee> GetAll()
         {
-            var sql = "SELECT * FROM Employee";
+            var sql = "SELECT * FROM Employees";
             return db.Query<Employee>(sql).ToList();
         }
 
         public void Remove(int id)
         {
-            var sql = "DELETE FROM Employee WHERE EmployeeId = @id";
+            var sql = "DELETE FROM Employees WHERE EmployeeId = @id";
             db.Execute(sql, new {id});
         }
 
         public Employee Update(Employee company)
         {
-            var sql = "UPDATE Employee SET Name = @Name, Title = @Title, Email = @Email, Phone = @Phone, CompanyId = @CompanyId WHERE EmployeeId = @EmployeeId";
+            var sql = "UPDATE Employees SET Name = @Name, Title = @Title, Email = @Email, Phone = @Phone, CompanyId = @CompanyId WHERE EmployeeId = @EmployeeId";
 
             db.Execute(sql, company);
             return company;
