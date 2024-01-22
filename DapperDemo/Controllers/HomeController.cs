@@ -49,7 +49,7 @@ namespace DapperDemo.Controllers
                 Title = "Test Manager 2"
             });
 
-            _bonRepo.AddTestCompanyWithEmployees(company);
+            _bonRepo.AddTestCompanyWithEmployeesWithTransaction(company);
             return RedirectToAction(nameof(Index));
         }
         public IActionResult RemoveTestRecords()

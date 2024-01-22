@@ -51,7 +51,7 @@ namespace DapperDemo.Controllers
         {
             if (ModelState.IsValid)
             {
-                _empRepo.Add(Employee);
+                await _empRepo.AddAsync(Employee);
                 return RedirectToAction(nameof(Index));
             }
             foreach (var modelState in ModelState.Values)

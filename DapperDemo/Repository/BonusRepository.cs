@@ -2,6 +2,7 @@
 using DapperDemo.Models;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Transactions;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace DapperDemo.Repository
@@ -72,13 +73,41 @@ namespace DapperDemo.Repository
             var id = db.Query<int>(sql, objComp/*new { @name = company.Name, @add = company.Address, @city = company.City, @state = company.State, @postal = company.PostalCode }*/).Single();
             objComp.CompanyId = id;
             Console.WriteLine(objComp.Address);
-            foreach (var employee in objComp.Employees)
-            {
-                employee.CompanyId = objComp.CompanyId;
-                var sql1 = "INSERT INTO Employees(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
+            //foreach (var employee in objComp.Employees)
+            //{
+            //    employee.CompanyId = objComp.CompanyId;
+            //    var sql1 = "INSERT INTO Employees(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
+            //            + "SELECT CAST(SCOPE_IDENTITY() as int); ";
+            //    db.Query<int>(sql1, employee).Single();
+            //}
+
+            objComp.Employees.Select(c => { c.CompanyId = id;return c; }).ToList();
+            var sqlEmp = "INSERT INTO Employees(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
                         + "SELECT CAST(SCOPE_IDENTITY() as int); ";
-                db.Query<int>(sql1, employee).Single();
+            db.Execute(sqlEmp, objComp.Employees);
+        }
+        public void AddTestCompanyWithEmployeesWithTransaction(Company objComp)
+        {
+            using(var transaction = new TransactionScope())
+            {
+                try
+                {
+                    var sql = "INSERT INTO Companies(Name, Address, City, State, PostalCode) VALUES (@Name, @Address, @City, @State, @PostalCode); SELECT CAST(SCOPE_IDENTITY() as int);";
+                    var id = db.Query<int>(sql, objComp/*new { @name = company.Name, @add = company.Address, @city = company.City, @state = company.State, @postal = company.PostalCode }*/).Single();
+                    objComp.CompanyId = id;
+
+                    objComp.Employees.Select(c => { c.CompanyId = id; return c; }).ToList();
+                    var sqlEmp = "INSERT INTO Employees(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
+                                + "SELECT CAST(SCOPE_IDENTITY() as int); ";
+                    db.Execute(sqlEmp, objComp.Employees);
+                    transaction.Complete();
+                }
+                catch(Exception ex)
+                {
+
+                }
             }
+            
         }
         public void RemoveRange(int[] companyId)
         {
