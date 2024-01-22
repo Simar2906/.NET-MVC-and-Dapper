@@ -2,6 +2,7 @@
 using DapperDemo.Models;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace DapperDemo.Repository
 {
@@ -30,9 +31,9 @@ namespace DapperDemo.Repository
 
             return employee.ToList();
         }
-        List<Company> GetAllCompaniesWithEmployees()
+        public List<Company> GetAllCompaniesWithEmployees()
         {
-            var sql = "SELECT E.*,C.* FROM Employees AS E INNER JOIN Companies AS C ON E.CompanyId = C.CompanyId";
+            var sql = "SELECT C.*,E.* FROM Employees AS E INNER JOIN Companies AS C ON E.CompanyId = C.CompanyId";
             var companyDic = new Dictionary<int, Company>();
 
             var company = db.Query<Company, Employee, Company>(sql, (c, e) =>
@@ -63,6 +64,29 @@ namespace DapperDemo.Repository
                 company.Employees = lists.Read<Employee>().ToList();
             }
             return company;
+        }
+
+        public void AddTestCompanyWithEmployees(Company objComp)
+        {
+            var sql = "INSERT INTO Companies(Name, Address, City, State, PostalCode) VALUES (@Name, @Address, @City, @State, @PostalCode); SELECT CAST(SCOPE_IDENTITY() as int);";
+            var id = db.Query<int>(sql, objComp/*new { @name = company.Name, @add = company.Address, @city = company.City, @state = company.State, @postal = company.PostalCode }*/).Single();
+            objComp.CompanyId = id;
+            Console.WriteLine(objComp.Address);
+            foreach (var employee in objComp.Employees)
+            {
+                employee.CompanyId = objComp.CompanyId;
+                var sql1 = "INSERT INTO Employees(Name, Title, Email, Phone, CompanyId) VALUES(@Name, @Title, @Email, @Phone, @CompanyId); "
+                        + "SELECT CAST(SCOPE_IDENTITY() as int); ";
+                db.Query<int>(sql1, employee).Single();
+            }
+        }
+        public void RemoveRange(int[] companyId)
+        {
+            db.Query("DELETE FROM Companies WHERE CompanyId IN @companyId", new { companyId });
+        }
+
+        public List<Company> FilterCompanyByName(string name) {
+            return db.Query<Company>("SELECT * FROM Companies WHERE Name LIKE '%'+@name+'%'", new { name }).ToList();
         }
     }
 }
